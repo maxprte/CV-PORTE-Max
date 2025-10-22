@@ -17,21 +17,89 @@
       --card-bg: #ffffff;
       --text-primary: #212529;
       --text-secondary: #6c757d;
+      --cursor-color: #764ba2; /* Couleur du curseur personnalisée */
     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    /* ======================================
+    STYLE DU CURSEUR PERSONNALISÉ 🎯
+    ======================================
+    */
+    /* Masquer le curseur par défaut sur les éléments non-interactifs */
     body {
+      cursor: none;
       font-family: 'Segoe UI', system-ui, sans-serif;
       line-height: 1.6;
       scroll-behavior: smooth;
       background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
       min-height: 100vh;
       color: var(--text-primary);
+    }
+    
+    /* Le 'dot' principal (suit la souris avec un léger délai) */
+    .custom-cursor-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--cursor-color);
+      border-radius: 50%;
+      pointer-events: none; /* Important: pour que le curseur ne bloque pas les clics */
+      position: fixed;
+      z-index: 9999;
+      mix-blend-mode: difference; /* Pour qu'il soit visible sur n'importe quel fond */
+      transform: translate(-50%, -50%);
+      transition: transform 0.05s ease-out; /* Plus rapide pour le 'dot' */
+    }
+
+    /* Le 'outline' qui réagit aux éléments interactifs */
+    .custom-cursor-outline {
+      width: 30px;
+      height: 30px;
+      border: 2px solid var(--cursor-color);
+      border-radius: 50%;
+      pointer-events: none;
+      position: fixed;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: all 0.15s ease-out, background-color 0.2s; /* Plus lent pour l''outline' */
+    }
+
+    /* Styles pour les éléments interactifs (boutons, liens, etc.) */
+    a, button, .accordion-button, .card:hover, .nav-link, .list-group-item, .badge {
+      cursor: none; /* Assurez-vous que le curseur par défaut est masqué ici aussi */
+    }
+
+    /* Effet sur l'outline lorsque la souris est sur un élément interactif */
+    .custom-cursor-outline.hover-target {
+      transform: translate(-50%, -50%) scale(1.5); /* Agrandissement */
+      border-color: #fff; /* Changement de couleur pour contraster */
+      background-color: var(--cursor-color);
+      mix-blend-mode: normal; /* Normaliser le blend pour l'arrière-plan du outline */
+    }
+    .custom-cursor-dot.hover-target {
+      transform: translate(-50%, -50%) scale(0); /* Masquer le dot lorsque l'outline s'agrandit */
+    }
+    
+    /* Masquer le curseur sur mobile pour éviter les bugs (car non compatible avec le toucher) */
+    @media (max-width: 992px) {
+      .custom-cursor-dot, .custom-cursor-outline {
+        display: none;
+      }
+      body {
+        cursor: auto;
+      }
+      a, button, .accordion-button, .card:hover, .nav-link, .list-group-item, .badge {
+        cursor: pointer;
+      }
+    }
+
+    /* ======================================
+    FIN DU STYLE DU CURSEUR PERSONNALISÉ
+    ======================================
+    */
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
     header {
@@ -350,6 +418,9 @@
   </style>
 </head>
 <body>
+  
+  <div class="custom-cursor-dot"></div>
+  <div class="custom-cursor-outline"></div>
   <header class="mb-5">
     <h1>Max Porte</h1>
     <p>Étudiant en BTS SIO SISR - Alternance</p>
@@ -574,6 +645,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // Animation des sections au scroll
       const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
@@ -586,6 +658,7 @@
         observer.observe(section);
       });
 
+      // Animation des barres de progression
       document.querySelectorAll('.progress-bar').forEach(bar => {
         const width = bar.style.width;
         bar.style.width = '0';
@@ -593,6 +666,65 @@
           bar.style.width = width;
         }, 300);
       });
+
+      // =======================================
+      // LOGIQUE DU CURSEUR PERSONNALISÉ (JS) 🖱️
+      // =======================================
+      const cursorDot = document.querySelector('.custom-cursor-dot');
+      const cursorOutline = document.querySelector('.custom-cursor-outline');
+      const interactiveElements = 'a, button, .accordion-button, .card, .nav-link, .list-group-item, .badge';
+      
+      // On vérifie que les éléments du curseur existent avant d'ajouter les écouteurs
+      if (cursorDot && cursorOutline) {
+        let mouseX = 0;
+        let mouseY = 0;
+        let dotX = 0;
+        let dotY = 0;
+        let outlineX = 0;
+        let outlineY = 0;
+        const speedDot = 0.05; // Vitesse de suivi du dot
+        const speedOutline = 0.15; // Vitesse de suivi de l'outline
+
+        // 1. Mettre à jour la position de la souris
+        window.addEventListener('mousemove', (e) => {
+          mouseX = e.clientX;
+          mouseY = e.clientY;
+        });
+
+        // 2. Animer le curseur
+        function animateCursor() {
+          // Calcul de la nouvelle position du dot (interpolation linéaire)
+          dotX += (mouseX - dotX) * speedDot;
+          dotY += (mouseY - dotY) * speedDot;
+          cursorDot.style.left = `${dotX}px`;
+          cursorDot.style.top = `${dotY}px`;
+
+          // Calcul de la nouvelle position de l'outline (interpolation linéaire)
+          outlineX += (mouseX - outlineX) * speedOutline;
+          outlineY += (mouseY - outlineY) * speedOutline;
+          cursorOutline.style.left = `${outlineX}px`;
+          cursorOutline.style.top = `${outlineY}px`;
+
+          requestAnimationFrame(animateCursor);
+        }
+
+        animateCursor();
+
+        // 3. Gérer les interactions (hover)
+        document.querySelectorAll(interactiveElements).forEach(element => {
+          element.addEventListener('mouseenter', () => {
+            cursorOutline.classList.add('hover-target');
+            cursorDot.classList.add('hover-target');
+          });
+          element.addEventListener('mouseleave', () => {
+            cursorOutline.classList.remove('hover-target');
+            cursorDot.classList.remove('hover-target');
+          });
+        });
+      }
+      // =======================================
+      // FIN LOGIQUE DU CURSEUR PERSONNALISÉ
+      // =======================================
     });
   </script>
 </body>
